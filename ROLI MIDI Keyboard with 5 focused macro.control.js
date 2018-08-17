@@ -1,21 +1,23 @@
 loadAPI(2);
 host.setShouldFailOnDeprecatedUse(true);
 
-host.defineController("ROLI - Flavio", "ROLI + 5 Device Focused Macros (CC 20-24)", "2.0", "787c4400-0b27-11e8-b566-0800200c9a66");
+host.defineController("ROLI - Flavio", "ROLI + 5 Device Focused Macros (dflt ROLI)", "2.0", "c5f632e0-a22b-11e8-b568-0800200c9a66");
 host.defineMidiPorts(1, 1);
 host.setShouldFailOnDeprecatedUse(true);
 
 var LOWEST_CC = 1;
-var HIGHEST_CC = 119;
+var HIGHEST_CC = 123;
 
-var DEVICE_START_CC = 20;
-var DEVICE_END_CC = 24;
+var DEVICE_START_CC = 107;
+var DEVICE_END_CC = 115;
+var DEVICE_CC_LIST = [107,109,111,113,114];
 
 function init()
 {
   host.getMidiInPort(0).setMidiCallback(onMidi);
   host.getMidiInPort(0).setSysexCallback(onSysex);
   generic = host.getMidiInPort(0).createNoteInput("", "??????");
+generic.setUseExpressiveMidi(true, 0, 48);
   generic.setShouldConsumeEvents(false);
   
   var bendRanges = ["12", "24", "36", "48", "60", "72", "84", "96"];
@@ -46,38 +48,15 @@ function init()
 		var p = remoteControls.getParameter(i).getAmount();
 		p.setIndication(true);
 		p.setLabel("P" + (i + 1));
-		
-		// p.addValueObserver(128, setSliderValueLED(i,p));
 	}
-	// associated the ROLI slider LEDs to the focused device parameters.
+    
+    // associated the ROLI slider LEDs to the focused device parameters.
 	p=remoteControls.getParameter(0).getAmount()
 	p.value().addValueObserver(128, function(value) {setSliderValueLED(0,value)});
 	p=remoteControls.getParameter(1).getAmount()
 	p.value().addValueObserver(128, function(value) {setSliderValueLED(1,value)});
 	p=remoteControls.getParameter(2).getAmount()
 	p.value().addValueObserver(128, function(value) {setSliderValueLED(2,value)});
-	
-	// p.addValueObserver(128,setSliderValueLED(0,value))
-
-   /* 
-	LEGACY CODE FROM API v.1.0, NOW DEPRECATED.
-	
-	cursorDevice.getMacro(0).getAmount().addValueObserver(128, function (value)
-   {
-     setSliderValueLED(0, value);
-   });
-
-    cursorDevice.getMacro(1).getAmount().addValueObserver(128, function (value)
-   {
-      setSliderValueLED(1, value);
-   });
-
-   cursorDevice.getMacro(2).getAmount().addValueObserver(128, function (value)
-   {
-      setSliderValueLED(2, value);
-   });
-	*/
-
 	
 	// Make the rest freely mappable
 	userControls = host.createUserControls(HIGHEST_CC - LOWEST_CC + 1 - 8);
@@ -95,7 +74,8 @@ function init()
 
 function isInDeviceParametersRange(cc)
 {
-	return cc >= DEVICE_START_CC && cc <= DEVICE_END_CC;
+    return cc >= DEVICE_START_CC && cc <= DEVICE_END_CC;
+    // if (cc in DEVICE_CC_LIST) return(cc)
 }
 
 function userIndexFromCC(cc)
@@ -114,8 +94,15 @@ function onMidi(status, data1, data2)
 	{
 		if (isInDeviceParametersRange(data1))
 		{
-			var index = data1 - DEVICE_START_CC;
-			remoteControls.getParameter(index).getAmount().value().set(data2, 128);
+            var index = data1 - DEVICE_START_CC;
+            var rindex = 0;
+            if (data1 == 107) {rindex = 0;}
+            if (data1 == 109) {rindex = 1;}
+            if (data1 == 111) {rindex = 2;}
+            if (data1 == 113) {rindex = 3;}
+            if (data1 == 114) {rindex = 4;}
+             
+			remoteControls.getParameter(rindex).getAmount().value().set(data2, 128);
 		}
 		else if (data1 >= LOWEST_CC && data1 <= HIGHEST_CC)
 		{
